@@ -1,0 +1,53 @@
+## Mopsgeschwindigkeit
+
+Der Code in `slow-sim.R` implementiert eine (relativ sinnbefreite) Simulationsstudie um die Verteilung der geschätzten Regressionskoeffizienten $\hat\beta$ in einem Modell 
+$y \sim t(\text{ncp}= X \beta, \text{df}=4)$ mit $t(4)$-verteilten Fehlern und
+linearem Prädiktor $X \beta$ zu bestimmen:
+```{r, slow_sim}
+source("slow-sim.R")
+
+set.seed <- 232323
+observations <- 5000
+covariates <- 10
+testdata <- as.data.frame(
+  matrix(rnorm(observations * covariates),
+         nrow = observations
+  ))
+
+test <- simulate(reps = 100, seed = 20141028, data = testdata)
+
+system.time(test <- simulate(reps = 100, seed = 20141028, data = testdata))
+```
+Die Simulation ist recht ineffizient programmiert.
+
+a) Benutzen Sie die in der Vorlesung kennengelernten Profiling-Methoden um die Stellen zu identifizieren an denen das Skript in `slow-sim.R` die meiste Zeit verbringt. 
+```{r, a}
+# Zeile 6: 780ms, coefs <- cbind(coefs, simulate_once(data, true_coef, df))
+# Zeile 24: 430ms, model <- lm(y ~ ., data = data)
+```
+
+b) Modifizieren Sie den Code in `slow-sim.R` so, dass er i) **mindestens 5x schneller** läuft (ohne dass sich die Ergebnisse qualitativ ändern!!) und ii) unseren Vorstellungen von sauber dokumentierter, gut strukturierter und defensiv programmierter Software entspricht.
+
+```{r, b}
+source("slow-sim-improved.R")
+source("slow-sim.R")
+
+bench::mark(simulate(reps = 100, seed = 20141028, data = testdata),
+            simulate_improved(reps = 100, seed = 20141028, data = testdata),
+            # simulate_fast_future(reps = 100, seed = 20141028, data = testdata),
+            relative = TRUE
+)[,1:5]
+
+# Leider habe ich es nicht geschafft, um 5x schneller zu werden...
+
+# Problem beim Parallelisieren: bench mark weist auf unterschiedliche Ergebnisse hin, den Fehler konnte
+# ich leider nicht beheben
+  # source("slow-sim-improved-parallel.R")
+  # source("slow-sim.R")
+  # 
+  # bench::mark(simulate(reps = 100, seed = 20141028, data = testdata),
+  #             simulate_improved(reps = 100, seed = 20141028, data = testdata),
+  #             # simulate_fast_future(reps = 100, seed = 20141028, data = testdata),
+  #             relative = TRUE
+  # )[,1:5]
+```
